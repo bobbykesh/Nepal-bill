@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPay Transaction Receipt Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column; /* Allow content to stack */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .input-form {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        .input-form h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+            font-weight: 700;
+        }
+
+        .input-group input[type="text"],
+        .input-group input[type="number"],
+        .input-group input[type="datetime-local"],
+        .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 15px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #00B14F;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #008f3f;
+        }
+
+        .receipt-container {
+            background-color: #fff;
+            width: 100%;
+            max-width: 400px; /* Adjust as needed */
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            display: none; /* Hidden by default, shown after generation */
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .opay-logo {
+            display: flex;
+            align-items: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .opay-logo .o {
+            color: #00B14F;
+            font-size: 30px;
+            margin-right: 5px;
+        }
+
+        .transaction-receipt-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #555;
+        }
+
+        .amount-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .amount {
+            font-size: 38px;
+            font-weight: 700;
+            color: #00B14F;
+            margin-bottom: 5px;
+        }
+
+        .status {
+            font-size: 22px;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .datetime {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .divider {
+            border-bottom: 1px solid #eee;
+            margin: 30px 0;
+        }
+
+        .details-section {
+            margin-bottom: 30px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f7f7f7;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #777;
+            font-size: 15px;
+            flex-basis: 40%;
+        }
+
+        .detail-value {
+            color: #333;
+            font-size: 15px;
+            text-align: right;
+            flex-basis: 60%;
+            word-wrap: break-word;
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            line-height: 1.5;
+            margin-top: 30px;
+        }
+
+        .receipt-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: repeating-linear-gradient(90deg, #ccc 0, #ccc 2px, transparent 2px, transparent 4px);
+        }
+
+        .opay-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 100px;
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.04);
+            pointer-events: none;
+            z-index: 0;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="input-form">
+        <h2>Generate OPay Receipt</h2>
+        <div class="input-group">
+            <label for="amountInput">Amount (₦):</label>
+            <input type="number" id="amountInput" value="1000.00" step="0.01" required>
+        </div>
+        <div class="input-group">
+            <label for="customerNameInput">Customer Name:</label>
+            <input type="text" id="customerNameInput" value="TETEDE ABIODUN" required>
+        </div>
+        <div class="input-group">
+            <label for="serviceAddressInput">Service Address:</label>
+            <textarea id="serviceAddressInput" required>1004 AREA, ILARO ILAROSANGO OGUN</textarea>
+        </div>
+        <div class="input-group">
+            <label for="dateTimeInput">Date and Time:</label>
+            <input type="datetime-local" id="dateTimeInput" required>
+        </div>
+        <button onclick="generateReceipt()">Generate Receipt</button>
+    </div>
+
+    <div class="receipt-container" id="receiptContainer">
+        <div class="opay-watermark">OPay</div>
+        <div class="header">
+            <div class="opay-logo">
+                <span class="o">O</span>Pay
+            </div>
+            <div class="transaction-receipt-title">Transaction Receipt</div>
+        </div>
+
+        <div class="amount-section">
+            <div class="amount" id="receiptAmount">₦1,000.00</div>
+            <div class="status">Successful</div>
+            <div class="datetime" id="receiptDateTime">Jun 27th, 2025 11:29:28</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="details-section">
+            <div class="detail-item">
+                <div class="detail-label">Provider</div>
+                <div class="detail-value">Ibadan Electricity</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Meter Number</div>
+                <div class="detail-value" id="receiptMeterNumber">45076761993</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Customer Name</div>
+                <div class="detail-value" id="receiptCustomerName">TETEDE ABIODUN</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Service Address</div>
+                <div class="detail-value" id="receiptServiceAddress">1004 AREA, ILARO ILAROSANGO OGUN</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Meter Type</div>
+                <div class="detail-value">Prepaid</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Transaction No.</div>
+                <div class="detail-value" id="receiptTransactionNo">250627090100479215425273</div>
+            </div>
+        </div>
+
+        <div class="footer-text">
+            Enjoy a better life with OPay. Get free transfers, withdrawals, bill payments, instant loans, and good annual
+            interest On your savings. OPay is licensed by the Central Bank of Nigeria and insured by the NDIC.
+        </div>
+    </div>
+
+    <script>
+        // Set default date and time to current
+        window.onload = function() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('dateTimeInput').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+
+        function generateRandomNumber(length) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += Math.floor(Math.random() * 10);
+            }
+            return result;
+        }
+
+        function generateReceipt() {
+            const amount = parseFloat(document.getElementById('amountInput').value).toFixed(2);
+            const customerName = document.getElementById('customerNameInput').value.toUpperCase();
+            const serviceAddress = document.getElementById('serviceAddressInput').value.toUpperCase();
+            const dateTimeInput = document.getElementById('dateTimeInput').value;
+
+            // Format date and time
+            const dateObj = new Date(dateTimeInput);
+            const options = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
+            const formattedDateTime = dateObj.toLocaleString('en-US', options);
+
+            // Generate random meter number (e.g., 11 digits)
+            const meterNumber = generateRandomNumber(11);
+
+            // Generate random transaction number (e.g., 28 digits, similar to the example)
+            const transactionNo = generateRandomNumber(28);
+
+            // Update receipt details
+            document.getElementById('receiptAmount').innerText = `₦${amount}`;
+            document.getElementById('receiptCustomerName').innerText = customerName;
+            document.getElementById('receiptServiceAddress').innerText = serviceAddress;
+            document.getElementById('receiptDateTime').innerText = formattedDateTime;
+            document.getElementById('receiptMeterNumber').innerText = meterNumber;
+            document.getElementById('receiptTransactionNo').innerText = transactionNo;
+
+            // Show the receipt container
+            document.getElementById('receiptContainer').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
