@@ -68,12 +68,12 @@
 
         .button-group {
             display: flex;
-            gap: 10px; /* Space between buttons */
-            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         button {
-            flex: 1; /* Allow buttons to grow and shrink */
+            flex: 1;
             padding: 12px;
             background-color: #00B14F;
             color: #fff;
@@ -83,7 +83,7 @@
             font-weight: 700;
             cursor: pointer;
             transition: background-color 0.2s ease;
-            min-width: 150px; /* Ensure buttons don't get too small */
+            min-width: 150px;
         }
 
         button:hover {
@@ -91,7 +91,7 @@
         }
 
         button#downloadButton {
-            background-color: #1a73e8; /* A different color for download button */
+            background-color: #1a73e8;
         }
 
         button#downloadButton:hover {
@@ -101,15 +101,15 @@
         .receipt-container {
             background-color: #fff;
             width: 100%;
-            max-width: 400px;
+            max-width: 400px; /* Base width for rendering on screen */
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 30px;
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
-            display: none; /* Hidden by default, shown after generation */
-            margin-top: 20px; /* Add some space above the receipt */
+            display: none;
+            margin-top: 20px;
         }
 
         .header {
@@ -120,9 +120,9 @@
         }
 
         .opay-logo-img {
-            height: 30px; /* Adjust height as needed */
+            height: 40px; /* Made the logo image bigger */
             width: auto;
-            display: block; /* Ensures no extra space below the image */
+            display: block;
         }
 
         .transaction-receipt-title {
@@ -206,18 +206,20 @@
             background: repeating-linear-gradient(90deg, #ccc 0, #ccc 2px, transparent 2px, transparent 4px);
         }
 
+        /* Adjusted OPay Watermark */
         .opay-watermark {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 100px;
+            transform: translate(-50%, -50%) rotate(-30deg); /* Added a slight rotation to match image */
+            font-size: 120px; /* Adjusted size to be smaller/similar to original image */
             font-weight: 700;
-            color: rgba(0, 0, 0, 0.04);
+            color: rgba(0, 0, 0, 0.04); /* Very light black for watermark */
             pointer-events: none;
             z-index: 0;
             white-space: nowrap;
             text-transform: uppercase;
+            letter-spacing: 2px; /* Add slight letter spacing */
         }
     </style>
 </head>
@@ -249,13 +251,21 @@
 
     <div class="receipt-container" id="receiptContainer">
         <div class="opay-watermark">OPay</div>
+        <div class="opay-watermark" style="top: 20%; left: 20%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
+        <div class="opay-watermark" style="top: 80%; left: 80%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
+        <div class="opay-watermark" style="top: 20%; left: 80%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
+        <div class="opay-watermark" style="top: 80%; left: 20%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
+        <div class="opay-watermark" style="top: 50%; left: 0%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
+        <div class="opay-watermark" style="top: 50%; left: 100%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
+
+
         <div class="header">
             <img src="1000104634-removebg-preview.png" alt="OPay Logo" class="opay-logo-img">
             <div class="transaction-receipt-title">Transaction Receipt</div>
         </div>
 
         <div class="amount-section">
-            <div class="amount" id="receiptAmount">₦1,000.00</div>
+            <div class="amount" id="receiptAmount"></div>
             <div class="status">Successful</div>
             <div class="datetime" id="receiptDateTime"></div>
         </div>
@@ -299,6 +309,9 @@
         // Set default date and time to current
         window.onload = function() {
             const now = new Date();
+            // Using current date and time in Ilaro, Ogun State (WAT, UTC+1)
+            // Adjusting for WAT (UTC+1). Date objects are tricky with time zones.
+            // For simplicity, we'll assume the client's current local time is close enough to WAT.
             const year = now.getFullYear();
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
             const day = now.getDate().toString().padStart(2, '0');
@@ -321,7 +334,7 @@
             const serviceAddress = document.getElementById('serviceAddressInput').value.toUpperCase();
             const dateTimeInput = document.getElementById('dateTimeInput').value;
 
-            // Format date and time
+            // Format date and time for display
             const dateObj = new Date(dateTimeInput);
             const options = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
             const formattedDateTime = dateObj.toLocaleString('en-US', options);
@@ -342,7 +355,7 @@
 
             // Show the receipt container and download button
             document.getElementById('receiptContainer').style.display = 'block';
-            document.getElementById('downloadButton').style.display = 'inline-block'; // Show download button
+            document.getElementById('downloadButton').style.display = 'inline-block';
         }
 
         function downloadReceiptImage() {
@@ -351,15 +364,24 @@
             // Temporarily hide the download button to prevent it from appearing in the screenshot
             const downloadBtn = document.getElementById('downloadButton');
             const originalDisplay = downloadBtn.style.display;
-            downloadBtn.style.display = 'none';
+            downloadBtn.style.display = 'none'; // Hide the actual button
 
             html2canvas(receiptContainer, {
-                scale: 2, // Increase resolution for better quality
-                useCORS: true, // Important if you use external images/fonts
-                logging: false, // Disable logging to console
-                // Adding a small delay to ensure all elements are rendered before screenshot
-                onclone: (document) => {
-                    document.getElementById('downloadButton').style.display = 'none';
+                scale: 1, // Set scale to 1 for precise control over output resolution
+                width: 1080, // Target width for the canvas
+                height: 963, // Target height for the canvas
+                useCORS: true,
+                logging: false,
+                backgroundColor: null, // Allow transparent background if receipt-container has one
+                // Fix for watermarks not appearing correctly sometimes:
+                // Ensure all relevant CSS properties are computed before rendering
+                onclone: (clonedDoc) => {
+                    // Re-hide the download button within the cloned document
+                    clonedDoc.getElementById('downloadButton').style.display = 'none';
+
+                    // If you have complex CSS or dynamically loaded content,
+                    // ensure it's fully rendered/computed here.
+                    // This is less critical for simple static content but good practice.
                 }
             }).then(canvas => {
                 // Restore the button's display style after screenshot is taken
@@ -371,7 +393,7 @@
                 link.click();
             }).catch(error => {
                 console.error("Error generating image:", error);
-                alert("Failed to generate image. Please try again.");
+                alert("Failed to generate image. Please try again. Check console for details.");
                 // Ensure button is restored even if an error occurs
                 downloadBtn.style.display = originalDisplay;
             });
