@@ -70,6 +70,7 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            justify-content: center; /* Center buttons if they wrap */
         }
 
         button {
@@ -98,10 +99,13 @@
             background-color: #155cb7;
         }
 
+        /* Receipt Container - Adjusted for output dimensions */
         .receipt-container {
             background-color: #fff;
             width: 100%;
-            max-width: 400px; /* Base width for rendering on screen */
+            /* Calculate max-width based on target aspect ratio (1080 / 963 ≈ 1.1215) and a base for content */
+            max-width: 400px; /* Base width for display on screen */
+            /* Height will be dynamic, html2canvas will handle the final output resolution */
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 30px;
@@ -119,8 +123,9 @@
             margin-bottom: 30px;
         }
 
+        /* OPay Logo Image - Made bigger */
         .opay-logo-img {
-            height: 40px; /* Made the logo image bigger */
+            height: 40px; /* Increased height for bigger logo */
             width: auto;
             display: block;
         }
@@ -206,20 +211,19 @@
             background: repeating-linear-gradient(90deg, #ccc 0, #ccc 2px, transparent 2px, transparent 4px);
         }
 
-        /* Adjusted OPay Watermark */
+        /* OPay Watermark - Adjusted size and opacity */
         .opay-watermark {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg); /* Added a slight rotation to match image */
-            font-size: 120px; /* Adjusted size to be smaller/similar to original image */
+            transform: translate(-50%, -50%);
+            font-size: 80px; /* Adjusted from 100px to 80px */
             font-weight: 700;
-            color: rgba(0, 0, 0, 0.04); /* Very light black for watermark */
+            color: rgba(0, 0, 0, 0.02); /* Adjusted from 0.04 to 0.02 for lighter opacity */
             pointer-events: none;
             z-index: 0;
             white-space: nowrap;
             text-transform: uppercase;
-            letter-spacing: 2px; /* Add slight letter spacing */
         }
     </style>
 </head>
@@ -251,21 +255,13 @@
 
     <div class="receipt-container" id="receiptContainer">
         <div class="opay-watermark">OPay</div>
-        <div class="opay-watermark" style="top: 20%; left: 20%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
-        <div class="opay-watermark" style="top: 80%; left: 80%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
-        <div class="opay-watermark" style="top: 20%; left: 80%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
-        <div class="opay-watermark" style="top: 80%; left: 20%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
-        <div class="opay-watermark" style="top: 50%; left: 0%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
-        <div class="opay-watermark" style="top: 50%; left: 100%; transform: translate(-50%, -50%) rotate(-30deg);">OPay</div>
-
-
         <div class="header">
             <img src="1000104634-removebg-preview.png" alt="OPay Logo" class="opay-logo-img">
             <div class="transaction-receipt-title">Transaction Receipt</div>
         </div>
 
         <div class="amount-section">
-            <div class="amount" id="receiptAmount"></div>
+            <div class="amount" id="receiptAmount">₦1,000.00</div>
             <div class="status">Successful</div>
             <div class="datetime" id="receiptDateTime"></div>
         </div>
@@ -301,7 +297,7 @@
 
         <div class="footer-text">
             Enjoy a better life with OPay. Get free transfers, withdrawals, bill payments, instant loans, and good annual
-            interest On your savings. OPay is licensed by the Central Bank of Nigeria and insured by the NDIC.
+            interest On your savings. OPay islicensed by the Central Bank of Nigeria and insured by the NDIC.
         </div>
     </div>
 
@@ -309,9 +305,6 @@
         // Set default date and time to current
         window.onload = function() {
             const now = new Date();
-            // Using current date and time in Ilaro, Ogun State (WAT, UTC+1)
-            // Adjusting for WAT (UTC+1). Date objects are tricky with time zones.
-            // For simplicity, we'll assume the client's current local time is close enough to WAT.
             const year = now.getFullYear();
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
             const day = now.getDate().toString().padStart(2, '0');
@@ -334,7 +327,7 @@
             const serviceAddress = document.getElementById('serviceAddressInput').value.toUpperCase();
             const dateTimeInput = document.getElementById('dateTimeInput').value;
 
-            // Format date and time for display
+            // Format date and time
             const dateObj = new Date(dateTimeInput);
             const options = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
             const formattedDateTime = dateObj.toLocaleString('en-US', options);
@@ -364,37 +357,59 @@
             // Temporarily hide the download button to prevent it from appearing in the screenshot
             const downloadBtn = document.getElementById('downloadButton');
             const originalDisplay = downloadBtn.style.display;
-            downloadBtn.style.display = 'none'; // Hide the actual button
+            downloadBtn.style.display = 'none';
+
+            // Calculate the desired scale for html2canvas
+            // Target width: 1080px, Target height: 963px
+            // Current display max-width of receipt-container is 400px (arbitrary base)
+            // Let's assume a "base" height of the container when rendered at 400px width.
+            // We want the final image to be 1080x963.
+            // If the content itself renders at, say, 360px width internally, we need a scale of 1080/360 = 3
+            // Since html2canvas renders the *actual* DOM element content, we aim for a scale
+            // that makes the output canvas dimensions match the target.
+            // A higher scale generally gives better quality.
+            const targetWidth = 1080;
+            const targetHeight = 963;
+
+            // Get the current rendered width and height of the container (important for calculating scale)
+            // This needs to be done *after* the container is displayed, but before html2canvas runs.
+            const rect = receiptContainer.getBoundingClientRect();
+            const currentRenderedWidth = rect.width;
+            const currentRenderedHeight = rect.height;
+
+            // Calculate scale based on desired width relative to current rendered width
+            // Or based on desired height relative to current rendered height
+            // Using width for scale calculation is often more reliable
+            const scaleX = targetWidth / currentRenderedWidth;
+            const scaleY = targetHeight / currentRenderedHeight;
+            const finalScale = Math.min(scaleX, scaleY); // Use the smaller scale to ensure content fits
 
             html2canvas(receiptContainer, {
-                scale: 1, // Set scale to 1 for precise control over output resolution
-                width: 1080, // Target width for the canvas
-                height: 963, // Target height for the canvas
+                scale: finalScale, // Use the calculated scale
                 useCORS: true,
                 logging: false,
-                backgroundColor: null, // Allow transparent background if receipt-container has one
-                // Fix for watermarks not appearing correctly sometimes:
-                // Ensure all relevant CSS properties are computed before rendering
-                onclone: (clonedDoc) => {
-                    // Re-hide the download button within the cloned document
-                    clonedDoc.getElementById('downloadButton').style.display = 'none';
-
-                    // If you have complex CSS or dynamically loaded content,
-                    // ensure it's fully rendered/computed here.
-                    // This is less critical for simple static content but good practice.
+                onclone: (document) => {
+                    document.getElementById('downloadButton').style.display = 'none';
                 }
             }).then(canvas => {
-                // Restore the button's display style after screenshot is taken
-                downloadBtn.style.display = originalDisplay;
+                downloadBtn.style.display = originalDisplay; // Restore button
+
+                // If the target dimensions are strict, you might need to create a new canvas
+                // and draw the html2canvas output onto it with desired dimensions.
+                // However, directly using scale often gets close enough.
+                const finalCanvas = document.createElement('canvas');
+                finalCanvas.width = targetWidth;
+                finalCanvas.height = targetHeight;
+                const ctx = finalCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, 0, targetWidth, targetHeight); // Draw to fit target dimensions
 
                 const link = document.createElement('a');
                 link.download = 'opay_receipt.png';
-                link.href = canvas.toDataURL('image/png');
+                link.href = finalCanvas.toDataURL('image/png'); // Use finalCanvas
                 link.click();
             }).catch(error => {
                 console.error("Error generating image:", error);
-                alert("Failed to generate image. Please try again. Check console for details.");
-                // Ensure button is restored even if an error occurs
+                alert("Failed to generate image. Please try again.");
                 downloadBtn.style.display = originalDisplay;
             });
         }
