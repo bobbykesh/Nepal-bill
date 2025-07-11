@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OPay Transaction Receipt Generator</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f0f2f5;
             display: flex;
-            flex-direction: column; /* Allow content to stack */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -57,7 +58,7 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 15px;
-            box-sizing: border-box; /* Include padding in width */
+            box-sizing: border-box;
         }
 
         .input-group textarea {
@@ -65,8 +66,14 @@
             min-height: 60px;
         }
 
+        .button-group {
+            display: flex;
+            gap: 10px; /* Space between buttons */
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+        }
+
         button {
-            width: 100%;
+            flex: 1; /* Allow buttons to grow and shrink */
             padding: 12px;
             background-color: #00B14F;
             color: #fff;
@@ -76,16 +83,25 @@
             font-weight: 700;
             cursor: pointer;
             transition: background-color 0.2s ease;
+            min-width: 150px; /* Ensure buttons don't get too small */
         }
 
         button:hover {
             background-color: #008f3f;
         }
 
+        button#downloadButton {
+            background-color: #1a73e8; /* A different color for download button */
+        }
+
+        button#downloadButton:hover {
+            background-color: #155cb7;
+        }
+
         .receipt-container {
             background-color: #fff;
             width: 100%;
-            max-width: 400px; /* Adjust as needed */
+            max-width: 400px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 30px;
@@ -93,6 +109,7 @@
             position: relative;
             overflow: hidden;
             display: none; /* Hidden by default, shown after generation */
+            margin-top: 20px; /* Add some space above the receipt */
         }
 
         .header {
@@ -102,18 +119,10 @@
             margin-bottom: 30px;
         }
 
-        .opay-logo {
-            display: flex;
-            align-items: center;
-            font-size: 24px;
-            font-weight: 700;
-            color: #333;
-        }
-
-        .opay-logo .o {
-            color: #00B14F;
-            font-size: 30px;
-            margin-right: 5px;
+        .opay-logo-img {
+            height: 30px; /* Adjust height as needed */
+            width: auto;
+            display: block; /* Ensures no extra space below the image */
         }
 
         .transaction-receipt-title {
@@ -232,22 +241,23 @@
             <label for="dateTimeInput">Date and Time:</label>
             <input type="datetime-local" id="dateTimeInput" required>
         </div>
-        <button onclick="generateReceipt()">Generate Receipt</button>
+        <div class="button-group">
+            <button onclick="generateReceipt()">Generate Receipt</button>
+            <button id="downloadButton" onclick="downloadReceiptImage()" style="display: none;">Download as Image</button>
+        </div>
     </div>
 
     <div class="receipt-container" id="receiptContainer">
         <div class="opay-watermark">OPay</div>
         <div class="header">
-            <div class="opay-logo">
-                <span class="o">O</span>Pay
-            </div>
+            <img src="image.png" alt="OPay Logo" class="opay-logo-img">
             <div class="transaction-receipt-title">Transaction Receipt</div>
         </div>
 
         <div class="amount-section">
             <div class="amount" id="receiptAmount">₦1,000.00</div>
             <div class="status">Successful</div>
-            <div class="datetime" id="receiptDateTime">Jun 27th, 2025 11:29:28</div>
+            <div class="datetime" id="receiptDateTime"></div>
         </div>
 
         <div class="divider"></div>
@@ -259,15 +269,15 @@
             </div>
             <div class="detail-item">
                 <div class="detail-label">Meter Number</div>
-                <div class="detail-value" id="receiptMeterNumber">45076761993</div>
+                <div class="detail-value" id="receiptMeterNumber"></div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Customer Name</div>
-                <div class="detail-value" id="receiptCustomerName">TETEDE ABIODUN</div>
+                <div class="detail-value" id="receiptCustomerName"></div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Service Address</div>
-                <div class="detail-value" id="receiptServiceAddress">1004 AREA, ILARO ILAROSANGO OGUN</div>
+                <div class="detail-value" id="receiptServiceAddress"></div>
             </div>
             <div class="detail-item">
                 <div class="detail-label">Meter Type</div>
@@ -275,7 +285,7 @@
             </div>
             <div class="detail-item">
                 <div class="detail-label">Transaction No.</div>
-                <div class="detail-value" id="receiptTransactionNo">250627090100479215425273</div>
+                <div class="detail-value" id="receiptTransactionNo"></div>
             </div>
         </div>
 
@@ -330,8 +340,41 @@
             document.getElementById('receiptMeterNumber').innerText = meterNumber;
             document.getElementById('receiptTransactionNo').innerText = transactionNo;
 
-            // Show the receipt container
+            // Show the receipt container and download button
             document.getElementById('receiptContainer').style.display = 'block';
+            document.getElementById('downloadButton').style.display = 'inline-block'; // Show download button
+        }
+
+        function downloadReceiptImage() {
+            const receiptContainer = document.getElementById('receiptContainer');
+
+            // Temporarily hide the download button to prevent it from appearing in the screenshot
+            const downloadBtn = document.getElementById('downloadButton');
+            const originalDisplay = downloadBtn.style.display;
+            downloadBtn.style.display = 'none';
+
+            html2canvas(receiptContainer, {
+                scale: 2, // Increase resolution for better quality
+                useCORS: true, // Important if you use external images/fonts
+                logging: false, // Disable logging to console
+                // Adding a small delay to ensure all elements are rendered before screenshot
+                onclone: (document) => {
+                    document.getElementById('downloadButton').style.display = 'none';
+                }
+            }).then(canvas => {
+                // Restore the button's display style after screenshot is taken
+                downloadBtn.style.display = originalDisplay;
+
+                const link = document.createElement('a');
+                link.download = 'opay_receipt.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(error => {
+                console.error("Error generating image:", error);
+                alert("Failed to generate image. Please try again.");
+                // Ensure button is restored even if an error occurs
+                downloadBtn.style.display = originalDisplay;
+            });
         }
     </script>
 </body>
